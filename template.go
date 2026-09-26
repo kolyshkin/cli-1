@@ -38,10 +38,7 @@ VERSION:
 
 var copyrightTemplate = `{{wrap .Copyright 3}}`
 
-// RootCommandHelpTemplate is the text template for the Default help topic.
-// cli.go uses text/template to render templates. You can
-// render custom help text by setting this variable.
-var RootCommandHelpTemplate = `NAME:
+const rootCommandHelpTemplate = `NAME:
    {{template "helpNameTemplate" .}}
 
 USAGE:
@@ -66,10 +63,7 @@ COPYRIGHT:
    {{template "copyrightTemplate" .}}{{end}}
 `
 
-// CommandHelpTemplate is the text template for the command help topic.
-// cli.go uses text/template to render templates. You can
-// render custom help text by setting this variable.
-var CommandHelpTemplate = `NAME:
+const commandHelpTemplate = `NAME:
    {{template "helpNameTemplate" .}}
 
 USAGE:
@@ -88,10 +82,7 @@ OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}{{if .VisiblePersistentFlags}
 GLOBAL OPTIONS:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 `
 
-// SubcommandHelpTemplate is the text template for the subcommand help topic.
-// cli.go uses text/template to render templates. You can
-// render custom help text by setting this variable.
-var SubcommandHelpTemplate = `NAME:
+const subcommandHelpTemplate = `NAME:
    {{template "helpNameTemplate" .}}
 
 USAGE:
@@ -112,7 +103,7 @@ OPTIONS:{{template "visibleFlagTemplate" .}}{{end}}{{if .VisiblePersistentFlags}
 GLOBAL OPTIONS:{{template "visiblePersistentFlagTemplate" .}}{{end}}
 `
 
-var FishCompletionTemplate = `# {{ .Command.Name }} fish shell completion
+const fishCompletionTemplate = `# {{ .Command.Name }} fish shell completion
 
 function __fish_{{ .Command.Name }}_no_subcommand --description 'Test if there has been any subcommand yet'
     for i in (commandline -opc)

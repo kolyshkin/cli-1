@@ -164,11 +164,17 @@ For larger programs, this can noticeably increase the binary size.
 
 With the `urfave_cli_no_template` build tag, the default help and fish
 completion are rendered without `text/template`, producing the same output.
-Custom templates (`CustomRootCommandHelpTemplate`, `CustomHelpTemplate`,
-modified `RootCommandHelpTemplate` etc.) are not supported in this mode:
-instead of help, an error is printed to `ErrWriter`, and `ToFishCompletion`
-returns an error. Custom template functions other than `wrap` and `wrapAt`
-are ignored.
+Custom templates are not supported in this mode:
+
+- `RootCommandHelpTemplate`, `CommandHelpTemplate`, `SubcommandHelpTemplate`
+  and `FishCompletionTemplate` are constants, so modifying them results in
+  a compile error;
+- if `CustomRootCommandHelpTemplate` or `CustomHelpTemplate` is set for any
+  command, `Run` returns an error;
+- if `DefaultPrintHelpCustom` is called with a custom template, an error is
+  printed to `ErrWriter` instead of help.
+
+Custom template functions other than `wrap` and `wrapAt` are ignored.
 
 ```sh-session
 go build -tags urfave_cli_no_template -o myapp ./cmd/myapp

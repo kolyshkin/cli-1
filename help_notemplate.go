@@ -14,14 +14,17 @@ import (
 // templatesSupported is true unless built with the urfave_cli_no_template tag.
 const templatesSupported = false
 
-// Default template values, used to recognize which help is being requested.
-// Package-level variable initialization happens before any init function,
-// so these are the values before any modifications by the user.
-var (
-	defaultRootCommandHelpTemplate = RootCommandHelpTemplate
-	defaultCommandHelpTemplate     = CommandHelpTemplate
-	defaultSubcommandHelpTemplate  = SubcommandHelpTemplate
-	defaultFishCompletionTemplate  = FishCompletionTemplate
+// With urfave_cli_no_template tag, the default templates are constants,
+// so an attempt to modify them results in a compile error.
+const (
+	// RootCommandHelpTemplate is the text template for the Default help topic.
+	RootCommandHelpTemplate = rootCommandHelpTemplate
+	// CommandHelpTemplate is the text template for the command help topic.
+	CommandHelpTemplate = commandHelpTemplate
+	// SubcommandHelpTemplate is the text template for the subcommand help topic.
+	SubcommandHelpTemplate = subcommandHelpTemplate
+	// FishCompletionTemplate is the text template for fish shell completion.
+	FishCompletionTemplate = fishCompletionTemplate
 )
 
 var errNoTemplate = errors.New("custom templates are not supported when built with urfave_cli_no_template tag")
@@ -62,11 +65,11 @@ func DefaultPrintHelpCustom(out io.Writer, templ string, data any, customFuncs m
 	}
 
 	switch templ {
-	case defaultRootCommandHelpTemplate:
+	case RootCommandHelpTemplate:
 		h.root()
-	case defaultCommandHelpTemplate:
+	case CommandHelpTemplate:
 		h.command()
-	case defaultSubcommandHelpTemplate:
+	case SubcommandHelpTemplate:
 		h.subcommand()
 	default:
 		reportNoTemplate(cmd)
@@ -77,6 +80,20 @@ func DefaultPrintHelpCustom(out io.Writer, templ string, data any, customFuncs m
 	_, err := io.WriteString(w, h.String())
 	handleTemplateError(err)
 	_ = w.Flush()
+}
+
+// checkNoCustomTemplates returns an error if cmd or any of its subcommands
+// has a custom help template set, as these are not supported.
+func checkNoCustomTemplates(cmd *Command) error {
+	if cmd.CustomRootCommandHelpTemplate != "" || cmd.CustomHelpTemplate != "" {
+		return fmt.Errorf("command %q: %w", cmd.Name, errNoTemplate)
+	}
+	for _, sub := range cmd.Commands {
+		if err := checkNoCustomTemplates(sub); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // reportNoTemplate reports that a custom template can't be used,
@@ -324,10 +341,6 @@ func printableValue(v any) string {
 }
 
 func renderFishCompletion(w io.Writer, data *fishCommandCompletionTemplate) error {
-	if FishCompletionTemplate != defaultFishCompletionTemplate {
-		return errNoTemplate
-	}
-
 	name := data.Command.Name
 	var b strings.Builder
 	b.WriteString("# " + name + " fish shell completion\n\n" +

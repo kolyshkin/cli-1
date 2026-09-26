@@ -12,6 +12,24 @@ import (
 // templatesSupported is true unless built with the urfave_cli_no_template tag.
 const templatesSupported = true
 
+// RootCommandHelpTemplate is the text template for the Default help topic.
+// cli.go uses text/template to render templates. You can
+// render custom help text by setting this variable.
+var RootCommandHelpTemplate = rootCommandHelpTemplate
+
+// CommandHelpTemplate is the text template for the command help topic.
+// cli.go uses text/template to render templates. You can
+// render custom help text by setting this variable.
+var CommandHelpTemplate = commandHelpTemplate
+
+// SubcommandHelpTemplate is the text template for the subcommand help topic.
+// cli.go uses text/template to render templates. You can
+// render custom help text by setting this variable.
+var SubcommandHelpTemplate = subcommandHelpTemplate
+
+// FishCompletionTemplate is the text template for fish shell completion.
+var FishCompletionTemplate = fishCompletionTemplate
+
 // DefaultPrintHelpCustom is the default implementation of HelpPrinterCustom.
 //
 // The customFuncs map will be combined with a default template.FuncMap to
@@ -103,6 +121,10 @@ func DefaultPrintHelpCustom(out io.Writer, templ string, data any, customFuncs m
 	handleTemplateError(t.Execute(w, data))
 
 	_ = w.Flush()
+}
+
+func checkNoCustomTemplates(*Command) error {
+	return nil
 }
 
 func renderFishCompletion(w io.Writer, data *fishCommandCompletionTemplate) error {

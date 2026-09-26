@@ -13,49 +13,60 @@ import (
 )
 
 func TestNoTemplate_CustomHelpTemplate(t *testing.T) {
-	var out, errOut bytes.Buffer
-	cmd := &Command{
-		Name:                          "foo",
-		Writer:                        &out,
-		ErrWriter:                     &errOut,
-		CustomRootCommandHelpTemplate: "{{.Name}}",
+	tests := []struct {
+		name string
+		cmd  *Command
+	}{
+		{
+			name: "root",
+			cmd:  &Command{Name: "foo", CustomRootCommandHelpTemplate: "{{.Name}}"},
+		},
+		{
+			name: "command",
+			cmd:  &Command{Name: "foo", CustomHelpTemplate: "{{.Name}}"},
+		},
+		{
+			name: "subcommand",
+			cmd: &Command{Name: "foo", Commands: []*Command{
+				{Name: "bar", Commands: []*Command{
+					{Name: "baz", CustomHelpTemplate: "{{.Name}}"},
+				}},
+			}},
+		},
 	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			tc.cmd.Writer = &out
+			tc.cmd.ErrWriter = &errOut
 
-	require.NoError(t, cmd.Run(context.Background(), []string{"foo", "--help"}))
-	assert.Empty(t, out.String())
-	assert.Equal(t, errNoTemplate.Error()+"\n", errOut.String())
+			// Not only help, but any run should fail.
+			err := tc.cmd.Run(context.Background(), []string{"foo"})
+			require.ErrorIs(t, err, errNoTemplate)
+			assert.Empty(t, out.String())
+		})
+	}
 }
 
-func TestNoTemplate_ModifiedHelpTemplate(t *testing.T) {
-	defer func(old string) { RootCommandHelpTemplate = old }(RootCommandHelpTemplate)
-	RootCommandHelpTemplate += "extra"
-
-	var out, errOut bytes.Buffer
-	cmd := &Command{
-		Name:      "foo",
-		Writer:    &out,
-		ErrWriter: &errOut,
-	}
-
-	require.NoError(t, cmd.Run(context.Background(), []string{"foo", "--help"}))
-	assert.Empty(t, out.String())
-	assert.Equal(t, errNoTemplate.Error()+"\n", errOut.String())
-}
-
-func TestNoTemplate_NotCommand(t *testing.T) {
+func TestNoTemplate_DefaultPrintHelpCustom(t *testing.T) {
 	defer func(old io.Writer) { ErrWriter = old }(ErrWriter)
-	var out, errOut bytes.Buffer
-	ErrWriter = &errOut
 
-	DefaultPrintHelpCustom(&out, RootCommandHelpTemplate, "not a command", nil)
-	assert.Empty(t, out.String())
-	assert.Equal(t, errNoTemplate.Error()+"\n", errOut.String())
-}
+	tests := []struct {
+		name  string
+		templ string
+		data  any
+	}{
+		{name: "custom template", templ: "{{.Name}}", data: &Command{Name: "foo"}},
+		{name: "not a command", templ: RootCommandHelpTemplate, data: "not a command"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var out, errOut bytes.Buffer
+			ErrWriter = &errOut
 
-func TestNoTemplate_CustomFishCompletionTemplate(t *testing.T) {
-	defer func(old string) { FishCompletionTemplate = old }(FishCompletionTemplate)
-	FishCompletionTemplate = "{{.Command.Name}}"
-
-	_, err := (&Command{Name: "foo"}).ToFishCompletion()
-	assert.ErrorIs(t, err, errNoTemplate)
+			DefaultPrintHelpCustom(&out, tc.templ, tc.data, nil)
+			assert.Empty(t, out.String())
+			assert.Equal(t, errNoTemplate.Error()+"\n", errOut.String())
+		})
+	}
 }

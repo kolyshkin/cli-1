@@ -111,6 +111,9 @@ func (cmd *Command) run(ctx context.Context, osArgs []string) (_ context.Context
 	}
 
 	if cmd.parent == nil {
+		if err := checkNoCustomTemplates(cmd); err != nil {
+			return ctx, err
+		}
 		if cmd.ReadArgsFromStdin {
 			if args, err := cmd.parseArgsFromStdin(); err != nil {
 				return ctx, err
